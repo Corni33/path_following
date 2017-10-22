@@ -1,11 +1,15 @@
 import numpy as np
 import helper_functions as hf
 
-# Implementation of the flatness based path following controller from:
-# 'THE ARGO AUTONOMOUS VEHICLE'S VISION AND CONTROL SYSTEMS' (1999)
-#  by Massimo Bertozzi et. al.
+FLATNESS_CONTROLLER = 0
+PURE_PURSUIT_CONTROLLER = 1
 
-class Controller:
+
+class FlatnessController:
+    # Implementation of the flatness based path following controller from:
+    # 'THE ARGO AUTONOMOUS VEHICLE'S VISION AND CONTROL SYSTEMS' (1999)
+    #  by Massimo Bertozzi et. al.
+
     def __init__(self):
         self.L = None
         self.sim_dt = None
@@ -13,7 +17,6 @@ class Controller:
     def init(self, sim_dt=0.1, L=3.0):
         self.L = L
         self.sim_dt = sim_dt
-
 
     def get_steering_angle(self, current_state, current_steering_angle, look_ahead_point, eta):
 
@@ -77,6 +80,39 @@ class Controller:
         kappa = (xp * ypp - xpp * yp) / (xp**2 + yp**2)**(1.5)
 
         steering_angle = np.arctan(self.L * kappa)
+
+        return steering_angle
+
+
+class PurePursuitController:
+    # Implementation of the classical 'Pure Pursuit' path tracking controller:
+
+    def __init__(self):
+        self.L = None
+        self.sim_dt = None
+
+    def init(self, sim_dt=0.1, L=3.0):
+        self.L = L
+        self.sim_dt = sim_dt
+
+    def get_steering_angle(self, current_state, current_steering_angle, look_ahead_point, eta):
+
+        #convert look_ahead_point into vehicle coordinate system
+        (x_B, y_B, theta_B, kappa_B) = look_ahead_point
+        (x_A, y_A, theta_A, v) = current_state
+
+        x_look_ = x_B - x_A
+        y_look_ = y_B - y_A
+
+        x =  np.cos(theta_A) * x_look_ + np.sin(theta_A) * y_look_
+        y = -np.sin(theta_A) * x_look_ + np.cos(theta_A) * y_look_
+
+        # pure pursuit controller calculations
+        l_squared = x**2 + y**2 # distance between vehicle and look ahead point
+        gamma = 2*y/l_squared # desired curvature to reach the look ahead point
+
+        steering_angle = np.arctan(self.L*gamma)
+        print(x,y, gamma)
 
         return steering_angle
 
